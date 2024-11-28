@@ -139,12 +139,14 @@ def imprimir_bigotes(serie):
 
     print(f"Límite inferior (bigote inferior): {limite_inferior}")
     print(f"Límite superior (bigote superior): {limite_superior}")
+    # Retornar los valores para poder usarlos en otras funciones
+    return limite_inferior, limite_superior    
 def dimensiones(df):
     # Mostrar las primeras filas
     print("Dimensiones del dataset:")
     print(f"Features: {df.shape[1]}, Ejemplos: {df.shape[0]}")
     print("Primeras 5 filas del dataset:")
-    df.head()
+    return df.head()
 
 def plot_varianza_previo(prm_pca):
     # Graficar varianza explicada
@@ -184,16 +186,17 @@ def plot_varianza_previo(prm_pca):
 # Asumiendo que 'prm_pca' es el modelo PCA ya ajustado con los datos
 # plot_varianza(prm_pca)
 
-def plot_varianza(prm_pca):
+def plot_varianza_bkp(prm_pca):
     # Graficar varianza explicada
     plt.figure(figsize=(12, 6))
 
-    # 1. Varianza explicada por cada componente
+    # 1. Ganancia de varianza explicada por cada componente
     plt.subplot(1, 2, 1)
     plt.bar(range(1, len(prm_pca.explained_variance_ratio_) + 1), prm_pca.explained_variance_ratio_, color='skyblue')
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Varianza Explicada')
-    plt.title('Varianza Explicada por Componente')
+    
+    plt.title('Ganancia de varianza explicada por cada componente')
+    plt.xlabel('Número de Componentes Principales')
+    plt.ylabel('Ganancia de Varianza Explicada (%)')
     plt.grid(True)
     # Agregar las etiquetas de porcentaje a cada barra
     for i, v in enumerate(prm_pca.explained_variance_ratio_):
@@ -201,6 +204,7 @@ def plot_varianza(prm_pca):
 
     # 2. Varianza acumulada
     explained_variance_cumulative = prm_pca.explained_variance_ratio_.cumsum()
+    explained_variance_gain = np.diff(explained_variance_cumulative, prepend=0)
     plt.subplot(1, 2, 2)
     plt.plot(range(1, len(explained_variance_cumulative) + 1), explained_variance_cumulative, marker='o', linestyle='--', color='orange')
     plt.xlabel('Número de Componentes Principales')
@@ -213,114 +217,123 @@ def plot_varianza(prm_pca):
 
     plt.tight_layout()
     plt.show()
-
+    """
+    # Mostrar las ganancias para cada componente
+    print("Ganancia de varianza explicada por componente:")
+    for i, gain in enumerate(explained_variance_gain, 1):
+        print(f"Componente {i}: {gain:.2%}")
     # Mostrar la varianza explicada acumulada para cada componente
     print("Variación explicada acumulada:")
     for i, variance in enumerate(explained_variance_cumulative, 1):
         print(f"Componente {i}: {variance:.2%}")
+    """
+    # Mostrar la varianza explicada acumulada para cada componente
+    print("Variación explicada acumulada y ganancia:")
+    for i, variance in enumerate(explained_variance_cumulative, 1):
+        print(f"Componente {i}: {variance:.2%} ({explained_variance_gain[i-1]*100:.2f}%)")
 
-def plot_varianza1(prm_pca):
-    # Graficar varianza explicada
-    plt.figure(figsize=(15, 6))
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+import numpy as np   
+def plot_varianza(prm_pca):
+    plt.figure(figsize=(12, 6))
 
-    # 1. Varianza explicada por cada componente
+    # 1. Ganancia de varianza explicada por cada componente
     plt.subplot(1, 2, 1)
-    bars = plt.bar(range(1, len(prm_pca.explained_variance_ratio_) + 1), prm_pca.explained_variance_ratio_)
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Varianza Explicada')
-    plt.title('Varianza Explicada por Componente')
-
-    # Agregar los porcentajes acumulados encima de las barras
-    cumulative_variance = prm_pca.explained_variance_ratio_.cumsum()
-    for i, bar in enumerate(bars):
-        yval = bar.get_height()
-        # Muestra el porcentaje acumulado en cada barra
-        plt.text(bar.get_x() + bar.get_width() / 2, yval, f'{cumulative_variance[i]*100:.2f}%', 
-                 ha='center', va='bottom', fontsize=9)
+    plt.bar(range(1, len(prm_pca.explained_variance_ratio_) + 1), 
+            prm_pca.explained_variance_ratio_, color='skyblue')
+    plt.title('Ganancia de varianza explicada por cada componente')
+    plt.xlabel('Número de Componentes Principales')
+    plt.ylabel('Ganancia de Varianza Explicada (%)')
+    plt.grid(True)
+    
+    # Etiquetas en las barras
+    for i, v in enumerate(prm_pca.explained_variance_ratio_):
+        plt.text(i + 1, v + 0.01, f'{v*100:.2f}%', ha='center')
 
     # 2. Varianza acumulada
     explained_variance_cumulative = prm_pca.explained_variance_ratio_.cumsum()
+    explained_variance_gain = np.diff(explained_variance_cumulative, prepend=0)
     plt.subplot(1, 2, 2)
-    plt.plot(range(1, len(explained_variance_cumulative) + 1), explained_variance_cumulative, marker='o', linestyle='--')
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Varianza Acumulada')
-    plt.title('Varianza Acumulada')
-
-    # Marcar el umbral del 90% como referencia
-    threshold = 0.9
-    optimal_components = np.argmax(explained_variance_cumulative >= threshold) + 1
-    plt.axhline(y=threshold, color='r', linestyle='--', label=f'90% Umbral')
-    plt.axvline(x=optimal_components, color='g', linestyle='--', label=f'{optimal_components} componentes')
-    # Agregar cuadrículas al gráfico de varianza acumulada
+    plt.plot(range(1, len(explained_variance_cumulative) + 1), 
+             explained_variance_cumulative, marker='o', linestyle='--', color='orange')
+    plt.title('Variación Explicada Acumulada')
+    plt.xlabel('Número de Componentes Principales')
+    plt.ylabel('Varianza Explicada Acumulada')
+    plt.axhline(y=0.90, color='r', linestyle='--', label=f'90% Umbral')
+    plt.axvline(x=np.argmax(explained_variance_cumulative >= 0.90) + 1, 
+                color='g', linestyle='--', label='Número óptimo de componentes')
     plt.grid(True)
-
     plt.legend()
+
     plt.tight_layout()
     plt.show()
 
-    # 3. Delta o diferencial de la varianza explicada
-    plt.subplot(1, 3, 3)
-    delta_variance = np.diff(explained_variance_cumulative, prepend=0)  # Diferencial acumulado
-    plt.plot(range(1, len(delta_variance) + 1), delta_variance, color='r', marker='o', linestyle='-')
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Delta Varianza Acumulada')
-    plt.title('Delta Varianza Acumulada')
+    # Mostrar información en consola
+    print("Variación explicada acumulada y ganancia:")
+    for i, variance in enumerate(explained_variance_cumulative, 1):
+        print(f"Componente {i}: {variance:.2%} ({explained_variance_gain[i-1]*100:.2f}%)")
 
-    # Agregar porcentajes en cada nodo
-    for i, v in enumerate(delta_variance):
-        plt.text(i + 1, v, f'{v*100:.2f}%', color='r', ha='center', va='bottom', fontsize=10)
-
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-def plot_varianzax(prm_pca):
-    # Graficar varianza explicada
-    plt.figure(figsize=(15, 6))  # Aumenté el ancho de la figura
-
-    # 1. Varianza explicada por cada componente
-    explained_variance = prm_pca.explained_variance_ratio_
-    plt.subplot(1, 3, 1)
-    plt.bar(range(1, len(explained_variance) + 1), explained_variance)
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Varianza Explicada')
-    plt.title('Varianza Explicada por Componente')
-    """""
-    bars = plt.bar(range(1, len(prm_pca.explained_variance_ratio_) + 1), prm_pca.explained_variance_ratio_)
-    # Agregar los porcentajes acumulados encima de las barras
-    cumulative_variance = prm_pca.explained_variance_ratio_.cumsum()
-    for i, bar in enumerate(bars):
-        yval = bar.get_height()
-        # Muestra el porcentaje acumulado en cada barra
-        plt.text(bar.get_x() + bar.get_width() / 2, yval, f'{cumulative_variance[i]*100:.2f}%', 
-                 ha='center', va='bottom', fontsize=9)
+def desc(df, columns=None):
     """
-    # 2. Varianza acumulada
-    explained_variance_cumulative = explained_variance.cumsum()
-    plt.subplot(1, 3, 2)
-    plt.plot(range(1, len(explained_variance_cumulative) + 1), explained_variance_cumulative, marker='o', linestyle='--')
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Varianza Acumulada')
-    plt.title('Varianza Acumulada')
+    Genera un cuadro de estadísticas descriptivas con el porcentaje de std/mean incluido.
 
-    # Marcar el umbral del 90% como referencia
-    threshold = 0.9
-    optimal_components = np.argmax(explained_variance_cumulative >= threshold) + 1
-    plt.axhline(y=threshold, color='r', linestyle='--', label=f'90% Umbral')
-    plt.axvline(x=optimal_components, color='g', linestyle='--', label=f'{optimal_components} componentes')
+    Parameters:
+    df (pd.DataFrame): El DataFrame a analizar.
+    columns (list): Lista de columnas sobre las cuales aplicar el cálculo. Si es None, se incluyen todas las columnas numéricas.
 
-    # 3. Delta o diferencial de la varianza explicada
-    plt.subplot(1, 3, 3)
-    delta_variance = np.diff(explained_variance_cumulative, prepend=0)  # Diferencial acumulado
-    plt.plot(range(1, len(delta_variance) + 1), delta_variance, color='r', marker='o', linestyle='-')
-    plt.xlabel('Componente Principal')
-    plt.ylabel('Delta Varianza Acumulada')
-    plt.title('Delta Varianza Acumulada')
+    Returns:
+    pd.DataFrame: DataFrame con estadísticas descriptivas y el porcentaje std/mean.
+    """
+    if columns is None:
+        columns = df.select_dtypes(include=['number']).columns  # Seleccionar todas las columnas numéricas si no se especifican
 
-    # Agregar porcentajes en cada nodo
-    for i, v in enumerate(delta_variance):
-        plt.text(i + 1, v, f'{v*100:.2f}%', color='r', ha='center', va='bottom', fontsize=10)
+    # Generar el describe solo para las columnas seleccionadas
+    df_describe = df[columns].describe().T
 
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+    # Calcular y agregar la columna del porcentaje std/mean
+    df_describe['%std/mean'] = ((df_describe['std'] / df_describe['mean']) * 100).round(2)
+
+    return df_describe
+import pandas as pd
+
+def filtrar_columnas(df, exclude_columns=None):
+    """
+    Filtra columnas numéricas, excluye las especificadas, y retorna un describe con porcentaje std/media.
+
+    Args:
+        df (pd.DataFrame): El DataFrame de entrada.
+        exclude_columns (list, opcional): Lista de columnas a excluir. Por defecto, es None.
+
+    Returns:
+        pd.DataFrame: DataFrame con las estadísticas descriptivas incluyendo el porcentaje std/media.
+    """
+    if exclude_columns is None:
+        exclude_columns = []
+    
+    # Seleccionar columnas numéricas y excluir las indicadas
+    numeric_columns = df.select_dtypes(include=['number']).drop(columns=exclude_columns, errors='ignore').columns
+    
+    # Calcular estadísticas descriptivas con std/media como columna adicional
+    stats = df[numeric_columns].describe().T
+    stats['std/mean (%)'] = ((stats['std'] / stats['mean']) * 100).round(2)
+    
+    return stats
+def imprimir_bigotes_por_grupo(df, columna, target):
+    """
+    Imprime los bigotes de los datos por grupo de una columna específica.
+    
+    Parameters:
+    df (pd.DataFrame): El DataFrame con los datos.
+    columna (str): La columna sobre la que se calcularán los bigotes.
+    target (str): La columna que contiene las etiquetas de grupo (por ejemplo, 'Species').
+
+    Returns:
+    None: Imprime los bigotes por cada grupo.
+    """
+    print(f"\nBigotes de {columna} por grupo:")
+    for species in df[target].unique():
+        print(f"\nEspecie: {species}")
+        species_data = df[df[target] == species][columna]
+        # Imprimir los bigotes solo una vez
+        limite_inferior, limite_superior = imprimir_bigotes(species_data)
