@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import re
 import matplotlib.pyplot as plt
+from tabulate import tabulate
 
 def cargar_datos(ruta_archivo):
     # Carga los datos del archivo CSV utilizando Numpy
@@ -337,3 +338,28 @@ def imprimir_bigotes_por_grupo(df, columna, target):
         species_data = df[df[target] == species][columna]
         # Imprimir los bigotes solo una vez
         limite_inferior, limite_superior = imprimir_bigotes(species_data)
+
+
+def generar_diccionario(df):
+    # Crear el diccionario con los nombres de las columnas y sus tipos de datos
+    data_dict = {col: str(df[col].dtype) for col in df.columns}
+
+    # Imprimir el diccionario en el formato solicitado
+    print("data_dict = {")
+    for col, dtype in data_dict.items():
+        print(f"    '{col}': '{dtype}',")
+    print("}") 
+def obtener_filas_no_numericas(df, columnas):
+    # Filtra las filas que tienen valores no numéricos en alguna de las columnas especificadas
+    filas_no_numericas = df[~df[columnas].apply(pd.to_numeric, errors='coerce').notna().all(axis=1)]
+    return filas_no_numericas
+def ver_diccionario(diccionario_file):
+    # Carga del diccionario de datos desde el archivo CSV
+    # Asegúrate de reemplazar 'diccionario.csv' por el nombre de tu archivo
+    diccionario = pd.read_csv(f'{diccionario_file}')
+
+    # Mostrar los datos tabulados con `tabulate`
+    tabla = tabulate(diccionario, headers='keys', tablefmt='fancy_grid', showindex=False)
+
+    # Imprimir la tabla
+    print(tabla)
